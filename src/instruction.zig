@@ -1,0 +1,101 @@
+pub const RawInstruction = packed union {
+    aaaa: u16,
+    aabb: packed struct(u16) { bb: u8, aa: u8 },
+    abbb: packed struct(u16) { bbb: u12, a: u4 },
+    abcc: packed struct(u16) { cc: u8, b: u4, a: u4 },
+    abcd: packed struct(u16) { d: u4, c: u4, b: u4, a: u4 },
+};
+
+pub const Instruction = union(enum) {
+    no_op,
+    clear,
+    @"return",
+    jump: struct { target: u12 },
+    call: struct { target: u12 },
+    if_neq_val: struct { vx: u4, value: u8 },
+    if_eq_val: struct { vx: u4, value: u8 },
+    if_neq_reg: struct { vx: u4, vy: u4 },
+    set_const: struct { vx: u4, value: u8 },
+    add_const: struct { vx: u4, value: u8 },
+    set_reg: struct { vx: u4, vy: u4 },
+    @"or": struct { vx: u4, vy: u4 },
+    @"and": struct { vx: u4, vy: u4 },
+    xor: struct { vx: u4, vy: u4 },
+    add_reg: struct { vx: u4, vy: u4 },
+    sub_reg: struct { vx: u4, vy: u4 },
+    shr_reg: struct { vx: u4, vy: u4 },
+    reg_sub: struct { vx: u4, vy: u4 },
+    shl_reg: struct { vx: u4, vy: u4 },
+    if_eq_reg: struct { vx: u4, vy: u4 },
+    set_index: struct { value: u12 },
+    jump_offset: struct { target: u12 },
+    random: struct { vx: u4, mask: u8 },
+    draw: struct { vx: u4, vy: u4, height: u4 },
+    if_not_key: struct { vx: u4 },
+    if_key: struct { vx: u4 },
+    get_delay: struct { vx: u4 },
+    get_key: struct { vx: u4 },
+    set_delay: struct { vx: u4 },
+    set_sound: struct { vx: u4 },
+    add_index: struct { vx: u4 },
+    get_character: struct { vx: u4 },
+    binary_coded_decimal: struct { vx: u4 },
+    store: struct { vx: u4 },
+    load: struct { vx: u4 },
+
+    pub fn decode(raw: RawInstruction) Instruction {
+        switch (raw.abbb.a) {
+            0x0 => switch (raw.aaaa) {
+                0x00E0 => return Instruction.clear,
+                0x00EE => return Instruction.@"return",
+                else => {},
+            },
+            0x1 => return Instruction{ .jump = .{ .target = raw.abbb.bbb } },
+            0x2 => return Instruction{ .call = .{ .target = raw.abbb.bbb } },
+            0x3 => return Instruction{ .if_neq_val = .{ .vx = raw.abcc.b, .value = raw.abcc.cc } },
+            0x4 => return Instruction{ .if_eq_val = .{ .vx = raw.abcc.b, .value = raw.abcc.cc } },
+            0x5 => if (raw.abcd.d == 0)
+                return Instruction{ .if_neq_reg = .{ .vx = raw.abcd.b, .vy = raw.abcd.c } },
+            0x6 => return Instruction{ .set_const = .{ .vx = raw.abcc.b, .value = raw.abcc.cc } },
+            0x7 => return Instruction{ .add_const = .{ .vx = raw.abcc.b, .value = raw.abcc.cc } },
+            0x8 => switch (raw.abcd.d) {
+                0x0 => return Instruction{ .set_reg = .{ .vx = raw.abcd.b, .vy = raw.abcd.c } },
+                0x1 => return Instruction{ .@"or" = .{ .vx = raw.abcd.b, .vy = raw.abcd.c } },
+                0x2 => return Instruction{ .@"and" = .{ .vx = raw.abcd.b, .vy = raw.abcd.c } },
+                0x3 => return Instruction{ .xor = .{ .vx = raw.abcd.b, .vy = raw.abcd.c } },
+                0x4 => return Instruction{ .add_reg = .{ .vx = raw.abcd.b, .vy = raw.abcd.c } },
+                0x5 => return Instruction{ .sub_reg = .{ .vx = raw.abcd.b, .vy = raw.abcd.c } },
+                0x6 => return Instruction{ .shr_reg = .{ .vx = raw.abcd.b, .vy = raw.abcd.c } },
+                0x7 => return Instruction{ .reg_sub = .{ .vx = raw.abcd.b, .vy = raw.abcd.c } },
+                0xE => return Instruction{ .shl_reg = .{ .vx = raw.abcd.b, .vy = raw.abcd.c } },
+                else => {},
+            },
+            0x9 => if (raw.abcd.d == 0)
+                return Instruction{ .if_eq_reg = .{ .vx = raw.abcd.b, .vy = raw.abcd.c } },
+            0xA => return Instruction{ .set_index = .{ .value = raw.abbb.bbb } },
+            0xB => return Instruction{ .jump_offset = .{ .target = raw.abbb.bbb } },
+            0xC => return Instruction{ .random = .{ .vx = raw.abcc.b, .mask = raw.abcc.cc } },
+            0xD => return Instruction{ .draw = .{ .vx = raw.abcd.b, .vy = raw.abcd.c, .height = raw.abcd.d } },
+            0xE => switch (raw.abcc.cc) {
+                0x9E => return Instruction{ .if_not_key = .{ .vx = raw.abcd.b } },
+                0xA1 => return Instruction{ .if_key = .{ .vx = raw.abcd.b } },
+                else => {},
+            },
+            0xF => switch (raw.abcc.cc) {
+                0x07 => return Instruction{ .get_delay = .{ .vx = raw.abcd.b } },
+                0x0A => return Instruction{ .get_key = .{ .vx = raw.abcd.b } },
+                0x15 => return Instruction{ .set_delay = .{ .vx = raw.abcd.b } },
+                0x18 => return Instruction{ .set_sound = .{ .vx = raw.abcd.b } },
+                0x1E => return Instruction{ .add_index = .{ .vx = raw.abcd.b } },
+                0x29 => return Instruction{ .get_character = .{ .vx = raw.abcd.b } },
+                0x33 => return Instruction{ .binary_coded_decimal = .{ .vx = raw.abcd.b } },
+                0x55 => return Instruction{ .store = .{ .vx = raw.abcd.b } },
+                0x65 => return Instruction{ .load = .{ .vx = raw.abcd.b } },
+                else => {},
+            },
+        }
+
+        @import("std").log.debug("bad instruction?: {X}", .{raw.aaaa});
+        return Instruction.no_op;
+    }
+};

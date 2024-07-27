@@ -1,0 +1,21 @@
+.{
+    .name = "zig-8",
+    .version = "0.1.0",
+
+    .dependencies = .{
+        .sdl = .{
+            .url = "https://github.com/ikskuh/SDL.zig/archive/5884a5657f593ca22287bd8571408c4b74d57585.tar.gz",
+            .hash = "12205f9033dc4f95cbdea479fd957f1a3bdb4fda129696a7dea84108d05f86589488",
+        },
+        .cova = .{
+            .url = "https://github.com/00JCIV00/cova/archive/a1ffd74d44acc2427104a13a7a2dc1c5ee23e117.tar.gz",
+            .hash = "122041c39bad9eea3621c94b9d06dedceb48c6fd49b4bb85017758babd6d4367b62a",
+        },
+    },
+
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+    },
+}
