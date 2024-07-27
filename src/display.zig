@@ -4,6 +4,7 @@ pub const Display = struct {
     window: SDL.Window,
     renderer: SDL.Renderer,
     texture: SDL.Texture,
+    vblank: bool,
     lastPresent: u32,
 
     const PixelLock = struct {
@@ -12,13 +13,15 @@ pub const Display = struct {
 
         pub fn release(self: *PixelLock) void {
             self.inner.release();
-            while ((SDL.getTicks() - self.display.lastPresent) * 60 < 1000) SDL.delay(1);
+            if (self.display.vblank) {
+                while ((SDL.getTicks() - self.display.lastPresent) * 60 < 1000) SDL.delay(1);
+                self.display.lastPresent = SDL.getTicks();
+            }
             self.display.present() catch unreachable;
-            self.display.lastPresent = SDL.getTicks();
         }
     };
 
-    pub fn init(title: [:0]const u8, scale: usize) !Display {
+    pub fn init(title: [:0]const u8, scale: usize, vblank: bool) !Display {
         try SDL.init(.{
             .video = true,
             .events = true,
@@ -42,6 +45,7 @@ pub const Display = struct {
             .window = window,
             .renderer = renderer,
             .texture = texture,
+            .vblank = vblank,
             .lastPresent = 0,
         };
     }

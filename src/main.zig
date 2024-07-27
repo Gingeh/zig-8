@@ -10,6 +10,9 @@ const CommandT = cova.Command.Base();
 const command = CommandT{
     .name = "zig-8",
     .description = "A CHIP-8 emulator written to learn Zig",
+    .opt_groups = &.{
+        "Quirks",
+    },
     .opts = &.{
         CommandT.OptionT{
             .name = "Rom Path",
@@ -31,6 +34,14 @@ const command = CommandT{
                 .alias_child_type = "px",
                 .default_val = 10,
             }),
+        },
+        CommandT.OptionT{
+            .name = "VBlank",
+            .description = "Limit draw instructions to 60Hz? (default: false)",
+            .long_name = "vblank",
+            .short_name = 'b',
+            .opt_group = "Quirks",
+            .mandatory = false,
         },
     },
 };
@@ -54,7 +65,7 @@ pub fn main() !void {
 
     const opts = try args.getOpts(.{});
 
-    const display = try Display.init("zig-8", try opts.get("Scale").?.val.getAs(usize));
+    const display = try Display.init("zig-8", try opts.get("Scale").?.val.getAs(usize), opts.get("VBlank").?.val.isSet());
     const program = try std.fs.cwd().readFileAlloc(alloc, try opts.get("Rom Path").?.val.getAs([]const u8), 0x1000 - 0x200);
     var rng = std.rand.DefaultPrng.init(@truncate(@as(u128, @bitCast(std.time.nanoTimestamp()))));
 
